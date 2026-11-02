@@ -46,6 +46,7 @@ The run has three stages: download and DGAN client generation, one parallel trai
 ```bash
 pip install torch --index-url https://download.pytorch.org/whl/cpu   # or the CUDA build
 pip install -r requirements.txt
+pip install --no-deps gretel-synthetics   # DGAN only
 
 export KAGGLE_USERNAME=... KAGGLE_KEY=... KAGGLE_DATASET=owner/dataset-name
 python scripts/download_cubems.py --out data/raw

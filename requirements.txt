@@ -8,6 +8,5 @@ scipy>=1.10
 joblib
 matplotlib>=3.7
 kaggle>=1.6
-gretel-synthetics   # DoppelGANger (DGAN); skipped if the thesis gan/ folder is vendored
 category_encoders
 tabulate

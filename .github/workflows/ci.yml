@@ -21,6 +21,7 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements.txt
+          pip install --no-deps gretel-synthetics
       - name: Fake CU-BEMS data
         run: python tests/make_fake_cubems.py --out data/raw --days 6
       - name: DGAN client generation
