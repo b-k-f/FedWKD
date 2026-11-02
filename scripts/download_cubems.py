@@ -1,8 +1,8 @@
 """Download the public CU-BEMS dataset from Kaggle into data/raw.
 
 Credentials are read from the environment (never commit them):
-    KAGGLE_USERNAME, KAGGLE_KEY   -> from https://www.kaggle.com/settings  ("Create New Token")
-    KAGGLE_DATASET                -> the dataset slug, e.g. "<owner>/<dataset-name>"
+    KAGGLE_API_TOKEN   -> from https://www.kaggle.com/settings (API -> Generate New Token)
+    KAGGLE_DATASET     -> the dataset slug, e.g. "<owner>/<dataset-name>"
 """
 import argparse
 import glob
@@ -23,9 +23,11 @@ def main():
 
     if not args.dataset:
         sys.exit("No dataset slug: pass --dataset or set KAGGLE_DATASET.")
-    if not (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")) \
-            and not os.path.exists(os.path.expanduser("~/.kaggle/kaggle.json")):
-        sys.exit("No Kaggle credentials: set KAGGLE_USERNAME and KAGGLE_KEY.")
+    has_token = os.environ.get("KAGGLE_API_TOKEN") or os.path.exists(os.path.expanduser("~/.kaggle/access_token"))
+    has_legacy = (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")) \
+        or os.path.exists(os.path.expanduser("~/.kaggle/kaggle.json"))
+    if not (has_token or has_legacy):
+        sys.exit("No Kaggle credentials: set KAGGLE_API_TOKEN (or legacy KAGGLE_USERNAME + KAGGLE_KEY).")
 
     # Imported here because the kaggle package authenticates on import.
     from kaggle.api.kaggle_api_extended import KaggleApi

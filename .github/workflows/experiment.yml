@@ -1,6 +1,6 @@
 # Full experiment, started by hand from the Actions tab ("Run workflow").
 # One-time setup in Settings -> Secrets and variables -> Actions:
-#   secrets:   KAGGLE_USERNAME, KAGGLE_KEY
+#   secrets:   KAGGLE_API_TOKEN
 #   variables: KAGGLE_DATASET  (the CU-BEMS slug, owner/name)
 name: FedWKD experiment
 
@@ -63,8 +63,7 @@ jobs:
       - name: Download CU-BEMS from Kaggle
         if: steps.cache-raw.outputs.cache-hit != 'true'
         env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KAGGLE_DATASET: ${{ vars.KAGGLE_DATASET }}
         run: python scripts/download_cubems.py --out data/raw
 
