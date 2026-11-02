@@ -10,3 +10,4 @@ matplotlib>=3.7
 kaggle>=1.8
 category_encoders
 tabulate
+six                   # imported by the kaggle package but not declared by it
