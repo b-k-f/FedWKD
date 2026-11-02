@@ -1,0 +1,13 @@
+# CPU users / GitHub Actions: install torch first with
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.1
+numpy>=1.24,<3
+pandas>=2.0,<3.0      # data.py uses resample('10T'); the 'T' alias was removed in pandas 3
+scikit-learn>=1.3
+scipy>=1.10
+joblib
+matplotlib>=3.7
+kaggle>=1.6
+gretel-synthetics   # DoppelGANger (DGAN); skipped if the thesis gan/ folder is vendored
+category_encoders
+tabulate

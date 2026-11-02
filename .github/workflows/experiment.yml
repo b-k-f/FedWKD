@@ -1,0 +1,147 @@
+# Full experiment, started by hand from the Actions tab ("Run workflow").
+# One-time setup in Settings -> Secrets and variables -> Actions:
+#   secrets:   KAGGLE_USERNAME, KAGGLE_KEY
+#   variables: KAGGLE_DATASET  (the CU-BEMS slug, owner/name)
+name: FedWKD experiment
+
+on:
+  workflow_dispatch:
+    inputs:
+      algos:
+        description: 'Algorithms (JSON list)'
+        default: '["fedwkd","fedavg","cadis","fedgkd"]'
+      n_clients:
+        description: 'Number of GAN-generated clients'
+        default: '100'
+      rounds:
+        description: 'Federated rounds'
+        default: '20'
+      local_epochs:
+        description: 'Local epochs per round'
+        default: '2'
+      floor_file:
+        description: 'CU-BEMS floor file the DGAN is trained on'
+        default: '2018Floor3.csv'
+      gan_epochs:
+        description: 'DGAN training epochs (thesis: 10000)'
+        default: '10000'
+      noise:
+        description: 'notebook = same generation call as the thesis; independent = fresh noise per client'
+        type: choice
+        options: [notebook, independent]
+        default: notebook
+      seed:
+        description: 'Random seed'
+        default: '42'
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  prepare-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install (CPU PyTorch)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+
+      - name: Cache raw CU-BEMS download
+        id: cache-raw
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: cubems-raw-${{ vars.KAGGLE_DATASET }}-v1
+
+      - name: Download CU-BEMS from Kaggle
+        if: steps.cache-raw.outputs.cache-hit != 'true'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+          KAGGLE_DATASET: ${{ vars.KAGGLE_DATASET }}
+        run: python scripts/download_cubems.py --out data/raw
+
+      - name: Cache trained DGAN
+        uses: actions/cache@v4
+        with:
+          path: saved_models
+          key: dgan-${{ inputs.floor_file }}-e${{ inputs.gan_epochs }}-s${{ inputs.seed }}-v1
+
+      - name: Generate synthetic clients (DGAN)
+        run: >
+          python scripts/generate_clients.py --raw-dir data/raw --out-dir data/clients
+          --floor-file ${{ inputs.floor_file }} --n-clients ${{ inputs.n_clients }}
+          --epochs ${{ inputs.gan_epochs }} --noise ${{ inputs.noise }} --seed ${{ inputs.seed }}
+          --model-path saved_models/dgan_${{ inputs.floor_file }}_e${{ inputs.gan_epochs }}.pt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: clients
+          path: data/clients
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dgan-model
+          path: saved_models
+
+  train:
+    needs: prepare-data
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        algo: ${{ fromJSON(inputs.algos) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Install (CPU PyTorch)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: clients
+          path: data/clients
+      - name: Train ${{ matrix.algo }}
+        run: >
+          python run_experiment.py --algo ${{ matrix.algo }} --data-dir data/clients
+          --n-clients ${{ inputs.n_clients }} --rounds ${{ inputs.rounds }}
+          --local-epochs ${{ inputs.local_epochs }} --seed ${{ inputs.seed }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.algo }}
+          path: results
+
+  compare:
+    needs: train
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install "pandas<3" matplotlib tabulate
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: results-*
+          merge-multiple: true
+          path: results
+      - name: Comparison table (shown in the run summary)
+        run: python scripts/compare.py --results results
+      - uses: actions/upload-artifact@v4
+        with:
+          name: comparison
+          path: |
+            results/comparison.md
+            results/comparison.png

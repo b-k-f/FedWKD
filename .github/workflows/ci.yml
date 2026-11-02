@@ -1,0 +1,34 @@
+# Smoke test on every push: fake CU-BEMS-shaped data -> DGAN clients -> 2 FL rounds.
+# Needs no Kaggle credentials, so it also runs on forks and pull requests.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install (CPU PyTorch)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Fake CU-BEMS data
+        run: python tests/make_fake_cubems.py --out data/raw --days 6
+      - name: DGAN client generation
+        run: python scripts/generate_clients.py --raw-dir data/raw --out-dir data/clients --n-clients 4 --epochs 2 --noise independent --model-path /tmp/dgan_ci.pt
+      - name: FedWKD + baselines (2 rounds)
+        run: |
+          for algo in fedwkd fedavg cadis fedgkd; do
+            python run_experiment.py --algo $algo --n-clients 4 --rounds 2 --local-epochs 1 --batch-size 32
+          done
+      - name: Compare
+        run: python scripts/compare.py
