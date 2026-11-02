@@ -51,8 +51,8 @@ pip install --no-deps gretel-synthetics   # DGAN only
 export KAGGLE_USERNAME=... KAGGLE_KEY=... KAGGLE_DATASET=owner/dataset-name
 python scripts/download_cubems.py --out data/raw
 python scripts/generate_clients.py --raw-dir data/raw --out-dir data/clients --n-clients 100
-python run_experiment.py --algo fedwkd --n-clients 100 --rounds 20
-python run_experiment.py --algo cadis  --n-clients 100 --rounds 20
+python run_experiment.py --algo fedwkd --n-clients 100 --rounds 100
+python run_experiment.py --algo cadis  --n-clients 100 --rounds 100
 python scripts/compare.py
 ```
 

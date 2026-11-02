@@ -15,10 +15,10 @@ on:
         default: '100'
       rounds:
         description: 'Federated rounds'
-        default: '20'
+        default: '100'
       local_epochs:
         description: 'Local epochs per round'
-        default: '2'
+        default: '1'
       floor_file:
         description: 'CU-BEMS floor file the DGAN is trained on'
         default: '2018Floor3.csv'

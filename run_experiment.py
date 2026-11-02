@@ -1,6 +1,6 @@
 """Run FedWKD or one of the baselines on the client CSVs, using the repo's own modules.
 
-    python run_experiment.py --algo fedwkd --data-dir data/clients --n-clients 100 --rounds 20
+    python run_experiment.py --algo fedwkd --data-dir data/clients --n-clients 100 --rounds 100
 
 Algorithms: fedwkd (proposed), fedavg, cadis, fedgkd.
 Outputs in results/<algo>/: metrics.csv, summary.json, convergence.png, forecast.png
@@ -137,8 +137,8 @@ def main():
     p.add_argument("--data-dir", default="data/clients")
     p.add_argument("--out", default="results")
     p.add_argument("--n-clients", type=int, default=100)
-    p.add_argument("--rounds", type=int, default=20)
-    p.add_argument("--local-epochs", type=int, default=2)
+    p.add_argument("--rounds", type=int, default=100)
+    p.add_argument("--local-epochs", type=int, default=1)
     p.add_argument("--batch-size", type=int, default=64)
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--window", type=int, default=6, help="input steps (6 x 10 min = 1 h)")
